@@ -12,22 +12,18 @@ const rl = readline.createInterface({
   output: process.stdout
 });
 
-const SNAKE = [   // Initial snake position as array of [row, column] coordinates
+const SNAKE = [   //Initial snake position as array of [row, column] coordinates, starts at [1, 3] and spans to [1, 5] in the maze
   [1, 3],
   [1, 4],
   [1, 5]
 ];
 
-type Direction = 'up' | 'down' | 'left' | 'right';  // Specifies definitions for valid movement directions
-
-
 const DIRECTIONS = {
-  up: [-1, 0],    // Move up decreases row index (row/column movement) --> In computer graphics, the y-axis is often inverted, with (0,0) at the top-left corner and positive y going downward.
-  down: [1, 0],  // Move down increases row index (row/column movement)
-  left: [0, -1], // Move left decreases column index (row/column movement)
-  right: [0, 1]  // Move right increases column index (row/column movement)
+  up: [-1, 0],     // Up arrow --> Moves one row up (decreases row index) --> Is -1 as in 2D arrays, the indexing works that -1 means moving to a smaller row number 
+  down: [1, 0],   // Down arrow
+  right: [0, 1],  // Right arrow
+  left: [0, -1]   // Left arrow
 } as const;
-
 
 const MAZE = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -42,66 +38,83 @@ const MAZE = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ];
 
-
-
-function moveSnake(direction: Direction): void {
+function moveSnake(direction: keyof typeof DIRECTIONS): void {
   const [dx, dy] = DIRECTIONS[direction];
-  for (let i = 0; i < SNAKE.length; i++) { // AI HELP: Loop through snake segments --> DIRECTIONS[direction] - It looks up the direction in a DIRECTIONS object to get the x and y coordinates for that direction. For example: 'up' might be [0, -1] (move up by decreasing y), 'right' might be [1, 0] (move right by increasing x)
-    const [prevX, prevY] = SNAKE[i];
-    const [newX, newY] = [prevX + dx, prevY + dy];
+  const [headX, headY] = SNAKE[0];
+  const newHeadX = headX + dx;
+  const newHeadY = headY + dy;
 
-  // Out-of-bounds check
-  if (newX < 0 || newX >= MAZE.length || newY < 0 || newY >= MAZE[0].length) {
-    console.log('You hit the boundary! I guess you really need to understand how games work :(');
-    rl.close();
-    return;
-  }    
-    SNAKE[i] = [newX, newY];
-    
-    
-    if (MAZE[newX][newY] === 2) { // AI HELP: Check for win condition (reached goal) --> MAZE[newX][newY] === 2 
-      console.log('You win! I guess you are not a mere mortal');
-      rl.close();
-      return;
-    }
-   
-    if (MAZE[newX][newY] === 1) {  // AI HELP: Check for collision with wall --> MAZE[newX][newY] === 1 
-      console.log('You lose! I guess the tech gods did not like you :(, does anyone really? ');
-      rl.close();
-      return;
-    }
+  
+  if (MAZE[newHeadX]?.[newHeadY] === 2) { // Check for win condition to escape! (Reached the end of the maze)
+    console.log('Congratulations! You won, the tech gods respect you a little bit, not sure about the mortals though!');
+    process.exit(0);
   }
+
+  // This checks for collisions with walls or boundaries, the collision detection part of the task set
+  if (
+    newHeadX < 0 ||
+    newHeadX >= MAZE.length ||
+    newHeadY < 0 ||
+    newHeadY >= MAZE[0].length ||
+    MAZE[newHeadX][newHeadY] === 1
+  ) {
+    console.log('Game Over! You hit a wall, check yourself real hard before you wreck yourself :(');
+    process.exit(0);
+  }
+
+  // AI HELP: This checks for self-collision (verifies if the new head position overlaps with any part of the snake's body) --> Index 0 is skipped for current head when checking for collisions
+  if (SNAKE.some(([x, y], index) => index > 0 && x === newHeadX && y === newHeadY)) {
+    console.log('Game Over! You hit yourself, clumsy oafs do not do well here :(');
+    process.exit(0);
+  }
+
+  // This adds the new head to the snake
+  SNAKE.unshift([newHeadX, newHeadY]);
+
+  // This clears the console and redraws the maze
   console.clear();
   printMaze();
 }
-
 
 function printMaze(): void {
   for (let i = 0; i < MAZE.length; i++) {
     for (let j = 0; j < MAZE[i].length; j++) {
       if (SNAKE.find(([x, y]) => x === i && y === j)) {
-        process.stdout.write('S'); // Snake segment
+        process.stdout.write('S'); // Snake segment of maze to identify it
       } else {
-        process.stdout.write(MAZE[i][j] === 1 ? 'X' : ' '); // Wall or empty    
+        process.stdout.write(MAZE[i][j] === 1 ? 'X' : ' '); // Wall or empty to help movements
       }
     }
     console.log(''); // New line after each row --> MAZE[i][j] === 1 
   }
 }
 
+readline.emitKeypressEvents(process.stdin); // AI HELP: This sets up arrow key input
+if (process.stdin.isTTY) {
+  process.stdin.setRawMode(true);
+}
 
+console.clear();
 printMaze();
+console.log('Use arrow keys to move, as this is what the tech gods approve of. Press q or type sucker to quit.');
 
-
-rl.on('line', (input) => {
-  const direction = input.trim().toLowerCase();
-  if (direction === 'exit') {
-    rl.close();
-  } else if (['up', 'down', 'left', 'right'].includes(direction)) {
-    moveSnake(direction as Direction);
-  } else {
-    console.log('Please check yourself before you wreck yourself by these: up, down, left, right, or exit...');
+process.stdin.on('keypress', (str, key) => {
+  if (key.ctrl && key.name === 'c') {
+    process.exit(0);
   }
-}).on('close', () => {
-  process.exit(0);
+  
+  //  This maps arrow key names to the direction names programmed above --> This is to allow arrow key input
+  const directionMap: {[key: string]: keyof typeof DIRECTIONS} = {
+    'up': 'up',
+    'down': 'down',
+    'right': 'right',
+    'left': 'left'
+  };
+
+  const direction = directionMap[key.name as keyof typeof directionMap];
+  if (direction) {
+    moveSnake(direction);
+  } else if (key.name === 'sucker' || key.name === 'q') {
+    process.exit(0);
+  }
 });
