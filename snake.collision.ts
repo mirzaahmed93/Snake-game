@@ -89,7 +89,7 @@ function printMaze(): void {
   }
 }
 
-readline.emitKeypressEvents(process.stdin); // AI HELP: This sets up arrow key input
+readline.emitKeypressEvents(process.stdin); // AI HELP: This sets up arrow key input to move where needed
 if (process.stdin.isTTY) {
   process.stdin.setRawMode(true);
 }
