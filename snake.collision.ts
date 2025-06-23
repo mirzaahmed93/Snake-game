@@ -112,7 +112,7 @@ process.stdin.on('keypress', (str, key) => {
   };
 
   const direction = directionMap[key.name as keyof typeof directionMap];
-  if (direction) {
+  if (direction) { // The code is part of the event listener that processes the input of snake movement and ability to quit the game
     moveSnake(direction);
   } else if (key.name === 'sucker' || key.name === 'q') {
     process.exit(0);
