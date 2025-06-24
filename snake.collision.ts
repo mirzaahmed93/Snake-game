@@ -76,7 +76,7 @@ function moveSnake(direction: keyof typeof DIRECTIONS): void {
   printMaze();
 }
 
-function printMaze(): void {
+function printMaze(): void {  // This checks if the current position [i, j] in the maze is occupied by any part of the snake. The find method looks through the SNAKE array (which contains coordinates of all snake segments) to see if any part matches the current position.
   for (let i = 0; i < MAZE.length; i++) {
     for (let j = 0; j < MAZE[i].length; j++) {
       if (SNAKE.find(([x, y]) => x === i && y === j)) {
